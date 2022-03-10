@@ -1,8 +1,9 @@
 #include <Arduino_FreeRTOS.h>
 #include <semphr.h>  // add the FreeRTOS functions for Semaphores (or Flags).
-// #include <HardwareSerial.h>
 #include <Arduino.h>
 #include <TinyGPS++.h>
+#include <IndicatiorHandler.h>
+#include <MemoryFree.h>
 
 // #ifdef __cplusplus
 // extern "C" {
@@ -17,11 +18,12 @@
 // It will be used to ensure only one Task is accessing this resource at any time.
 SemaphoreHandle_t xSerialSemaphore;
 
-// define two Tasks for DigitalRead & AnalogRead
+// define Tasks (move to a header file)
 void TaskDigitalRead( void *pvParameters );
 void TaskAnalogRead( void *pvParameters );
 void Task_GPS_Serial_Read( void *pvParameters );
 void Task_GPS_Debug( void *pvParameters);
+void Task_Comfort_Indicator( void *pvParameters);
 
 TinyGPSPlus GPS;
 int iRightIndicator=0;
@@ -35,12 +37,17 @@ int iIndicator =0; // Left 0, Right 1
 double d_15Voltage=0;
 double d_30Voltage=0;
 
+// Global init:
+IndicatiorHandler indicator;
+
 
 void setup() {
   // Monitor
   Serial.begin(115200);
   // GPS
   Serial3.begin(9600);
+
+  //indicator.Enable();
 
   // Serial3.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
   // Serial3.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
@@ -74,7 +81,9 @@ void setup() {
   xTaskCreate(Task_GPS_Serial_Read, "GpsReadAndParse", 128, NULL, 1, NULL );
   // Start debug task
   xTaskCreate(Task_GPS_Debug, "GpsDebug", 256, NULL, 1, NULL );
-  
+  // Start comfort blinkers
+  xTaskCreate(Task_Comfort_Indicator, "ComfortBlink", 128, NULL, 1, NULL );
+
   // Add a new line..
   Serial.println();
   // Now the Task scheduler, which takes over control of scheduling individual Tasks, is automatically started.
@@ -85,10 +94,22 @@ void loop() {
 }
 
 /*---------------------- Tasks ---------------------*/
+void Task_Comfort_Indicator( void *pvParameters __attribute__((unused)) )
+{
+  indicator.Enable();
+  indicator.SetMaxBlink(4);
+  for (;;)
+  {
+    indicator.IndicatiorUpdate();
+  }
+}
+
 void Task_GPS_Debug( void *pvParameters __attribute__((unused)) )
 {
   char sz[32];  // for print formatting
+  char blank[84] = "\r                                                                                 ";
   char buf[12]; // for float or double formatting
+  String sBlinkStatus;
   unsigned long l_Last_GPS_Debug = millis(); // The last output, so we can time next
   unsigned long NowTick;                     // Just millins 
   int DebugPrintInterval = 250;              // print interval in [ms]
@@ -97,6 +118,7 @@ void Task_GPS_Debug( void *pvParameters __attribute__((unused)) )
     NowTick = millis();
     if(NowTick > (l_Last_GPS_Debug + DebugPrintInterval) )
     {
+      Serial.print(blank);
       // Output a one liner debug info:
       sprintf(sz, "\r%02d/%02d/%02d %02d:%02d:%02d",
             GPS.date.day() , GPS.date.month(), GPS.date.year(), 
@@ -104,11 +126,12 @@ void Task_GPS_Debug( void *pvParameters __attribute__((unused)) )
       Serial.print(sz);
       if(GPS.location.age() < 9999)
       {
-        sprintf(sz, " Sat: %2d Age %4d ms" , int(GPS.satellites.value()), int( GPS.location.age()));
+        sprintf(sz, " Sat: %2d Age %4d ms " , int(GPS.satellites.value()), int( GPS.location.age()));
         Serial.print(sz);
       }
-      sprintf(sz, ", Left %1d, Right %1d, +15: ", iLeft_Indicator, iRightIndicator);
-      Serial.print(sz);
+      // sprintf(sz, ", Left %1d, Right %1d, +15: ", iLeft_Indicator, iRightIndicator);
+      // sprintf(sz, "%s", indicator.Status());
+      
       dtostrf(d_15Voltage,5,2,buf);
       Serial.print(buf);
       Serial.print(" V, +30: ");
@@ -116,6 +139,14 @@ void Task_GPS_Debug( void *pvParameters __attribute__((unused)) )
       Serial.print(buf);
       Serial.print(" V");
       
+      sBlinkStatus = " CB: " + indicator.Status() + "  ";
+      sBlinkStatus.toCharArray(sz,sBlinkStatus.length());
+      Serial.print(sz);
+
+      // sprintf(sz, " %d B", freeMemory());
+      // Serial.print(freeMemory());
+      // Serial.print(" B");
+
       l_Last_GPS_Debug = NowTick;
     }
     vTaskDelay(1);
