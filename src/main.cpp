@@ -140,7 +140,7 @@ void Task_GPS_Debug( void *pvParameters __attribute__((unused)) )
       Serial.print(" V");
       
       sBlinkStatus = " CB: " + indicator.Status() + "  ";
-      sBlinkStatus.toCharArray(sz,sBlinkStatus.length());
+      sBlinkStatus.toCharArray(sz, sBlinkStatus.length());
       Serial.print(sz);
 
       // sprintf(sz, " %d B", freeMemory());
