@@ -31,21 +31,21 @@ public:
     int  GetMaxBlink();
     void Enable();
     void Disable();
-    String Status();                                 // Retuns OFF, RIGHT, LEFT
+    String Status();                                            // Returns OFF, RIGHT, LEFT
     
 private:
-    bool IndicatorComfortBlinkEnabled = false;     // Set by config 
-    bool IndicatorSetByHandle = false;             // If handle is set to one side - no need to start comfort blink
-    DIRECTION IndicatorComfortBlinkDirection = DIRECTION::OFF;      // 1: left, 2: right
-    bool IndicatorComfortBlinkInAction = false;    // only true if active
-    short int BlinkCounter = 0;                    // Counter 
-    short int maxBlink = 3;                        // Max blink
-    int indicatorInterval = 650;                   // in milliseconds
-    int indicatorPulsLength = 150;                 // The digital port to DICE needs to stay high for x ms
-    unsigned long indicatiorLastBlink = 0;         // Set from millis()
-    unsigned long indicatorComfortBlinkStart = 0;  // Start of run 
-    void SetBlink(DIRECTION directionLeftRight);   // set dig IO HIGH
-    void ResetBlink(DIRECTION directionLeftRight); // set dig IO Low 
-    void PollDice();                               // Polls the dig IO pins
-    bool bDebug = false;
+    bool IndicatorComfortBlinkEnabled = false;                  // Set by config 
+    bool IndicatorSetByHandle = false;                          // If handle is set to one side - no need to start comfort blink
+    DIRECTION IndicatorComfortBlinkDirection = DIRECTION::OFF;  // 1: left, 2: right
+    bool IndicatorComfortBlinkInAction = false;                 // only true if active
+    short int BlinkCounter = 0;                                 // Counter 
+    short int maxBlink = 3;                                     // Max blink
+    int indicatorInterval = 650;                                // in milliseconds
+    int indicatorPulsLength = 150;                              // The digital port to DICE needs to stay high for x ms
+    unsigned long indicatiorLastBlink = 0;                      // Set from millis()
+    unsigned long indicatorComfortBlinkStart = 0;               // Start of run 
+    void SetBlink(DIRECTION directionLeftRight);                // set dig IO HIGH
+    void ResetBlink(DIRECTION directionLeftRight);              // set dig IO Low 
+    void PollDice();                                            // Polls the dig IO pins
+    bool bDebug = false;                                        // Set true to get debug info
 };

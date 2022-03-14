@@ -71,7 +71,7 @@ void setup() {
     ,  2  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
     ,  NULL ); //Task Handle
 
-  // Now set up two Tasks to run independently.
+  // Now set up Tasks:
   xTaskCreate(TaskDigitalRead, "RightRead", 128, (void*) 1, 2, NULL ); 
   // read voltage
   xTaskCreate(TaskAnalogRead,  "15Voltage", 128, (void*) A12, 1, NULL ); 
@@ -85,7 +85,7 @@ void setup() {
   xTaskCreate(Task_Comfort_Indicator, "ComfortBlink", 128, NULL, 1, NULL );
 
   // Add a new line..
-  Serial.println();
+  // Serial.println();
   // Now the Task scheduler, which takes over control of scheduling individual Tasks, is automatically started.
 }
 
@@ -112,7 +112,7 @@ void Task_GPS_Debug( void *pvParameters __attribute__((unused)) )
   String sBlinkStatus;
   unsigned long l_Last_GPS_Debug = millis(); // The last output, so we can time next
   unsigned long NowTick;                     // Just millins 
-  int DebugPrintInterval = 250;              // print interval in [ms]
+  int DebugPrintInterval = 500;              // print interval in [ms]
   for (;;) 
   {
     NowTick = millis();
@@ -168,8 +168,12 @@ void Task_GPS_Serial_Read( void *pvParameters __attribute__((unused)) )
 {
   for (;;) // A Task shall never return or exit.
   {
-    while (Serial3.available()) {
-      GPS.encode( (char) Serial3.read());
+    if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
+    {
+      while (Serial3.available()) {
+        GPS.encode( (char) Serial3.read());
+      }
+      xSemaphoreGive( xSerialSemaphore ); // Now free or "Give" the Serial Port for others.
     }
     vTaskDelay(1);  // one tick delay (15ms) in between reads for stability
   }
